@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -101,6 +102,8 @@ io.on("connection", (socket) => {
     console.log("User Disconnected", socket.id);
   });
 });
+console.log("Stripe key loaded:", process.env.STRIPE_SECRET_KEY ? "YES" : "NO");
+
 
 // Server Listen
 httpServer.listen(PORT, () =>

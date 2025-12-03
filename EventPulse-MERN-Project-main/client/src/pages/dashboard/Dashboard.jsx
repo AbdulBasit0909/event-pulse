@@ -9,7 +9,7 @@ import { getImageUrl } from "../../utils/imageHelper";
 import { loadStripe } from "@stripe/stripe-js"; 
 
 // --- STRIPE CONFIGURATION ---
-const stripePromise = loadStripe("pk_test_51SH0CJ7HwdZq8BC7oyKPjQxaAQ47C8IBRy0hzIgeUo4jdCSL6q6fTnI4Ut3JkRjgfvd0ys0cfWaiyVPqFSX3gKFd00ZEBHxmlC");
+const stripePromise = loadStripe("pk_test_51SZVxARvC02i3kHdUEu0FwERMzyVBxJ18RpmmyZ0hLurtU9jDagzEO0fOwhtMOGSKC5ZPqSZTnaujdmT2Ck6tBXh00SXBq2sZS");
 
 // Swiper Imports (Carousel)
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -224,27 +224,38 @@ const Dashboard = ({ toggleTheme, theme }) => {
     } catch (err) { console.error(err); }
   };
 
-  const handlePayment = async (event) => {
-    try {
-        const response = await axios.post("http://localhost:5000/payment/create-checkout-session", {
-            eventId: event._id,
-            eventTitle: event.title,
-            price: event.price,
-            userId: user._id
-        }, { headers: { Authorization: `Bearer ${token}` } });
+ const handlePayment = async (event) => {
+  try {
+    const stripe = await stripePromise;
 
-        if (response.data.url) {
-            window.location.href = response.data.url;
-        } else {
-            console.error("No payment URL received");
-            alert("Payment Error: No URL received");
-        }
+    const response = await axios.post(
+      "http://localhost:5000/payment/create-checkout-session",
+      {
+        eventId: event._id,
+        eventTitle: event.title,
+        price: event.price,
+        userId: user._id,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    } catch (err) {
-        console.error("Payment Error", err);
-        alert("Could not initiate payment.");
+    const data = response.data;
+
+    // ✔️ Use sessionId
+    const result = await stripe.redirectToCheckout({
+      sessionId: data.id,
+    });
+
+    if (result.error) {
+      alert(result.error.message);
     }
-  };
+  } catch (err) {
+    console.error("Payment Error", err);
+    alert("Payment could not be started.");
+  }
+};
+
+
 
   const handleLike = async (eventId) => {
     try {
