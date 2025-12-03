@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const createCheckoutSession = async (req, res) => {
   try {
     const { eventId, eventTitle, price, userId } = req.body;
@@ -18,7 +18,7 @@ export const createCheckoutSession = async (req, res) => {
             product_data: {
               name: `Ticket: ${eventTitle}`,
             },
-            unit_amount: price * 100, // Stripe expects cents (2000 = $20.00)
+            unit_amount:Math.round (price * 100), // Stripe expects cents (2000 = $20.00)
           },
           quantity: 1,
         },
