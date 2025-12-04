@@ -225,36 +225,33 @@ const Dashboard = ({ toggleTheme, theme }) => {
   };
 
  const handlePayment = async (event) => {
-  try {
-    const stripe = await stripePromise;
+    try {
+      // 1. Create the Checkout Session on the Server
+      const response = await axios.post(
+        "http://localhost:5000/payment/create-checkout-session",
+        {
+          eventId: event._id,
+          eventTitle: event.title,
+          price: event.price,
+          userId: user._id,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    const response = await axios.post(
-      "http://localhost:5000/payment/create-checkout-session",
-      {
-        eventId: event._id,
-        eventTitle: event.title,
-        price: event.price,
-        userId: user._id,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+      const data = response.data;
 
-    const data = response.data;
+      // ✅ FIX: Redirect directly using the URL from the server
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Payment URL not generated.");
+      }
 
-    // ✔️ Use sessionId
-    const result = await stripe.redirectToCheckout({
-      sessionId: data.id,
-    });
-
-    if (result.error) {
-      alert(result.error.message);
+    } catch (err) {
+      console.error("Payment Error", err);
+      alert("Payment could not be started.");
     }
-  } catch (err) {
-    console.error("Payment Error", err);
-    alert("Payment could not be started.");
-  }
-};
-
+  };
 
 
   const handleLike = async (eventId) => {
