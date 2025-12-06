@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageHelper"; 
+import HostAnalytics from "../../components/HostAnalytics"; // Make sure this import exists
 
 const ProfilePage = () => {
   const { userId } = useParams();
@@ -19,7 +20,7 @@ const ProfilePage = () => {
   // UI States
   const [activeTab, setActiveTab] = useState("hosted");
   const [isEditing, setIsEditing] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false); // <--- NEW STATE
+  const [isFollowing, setIsFollowing] = useState(false);
   
   // Edit Form State
   const [editFormData, setEditFormData] = useState({
@@ -51,7 +52,6 @@ const ProfilePage = () => {
         });
         setAttendingEvents(attendingRes.data);
 
-        // <--- NEW: CHECK IF FOLLOWING
         if (loggedInUser.friends && loggedInUser.friends.includes(userId)) {
             setIsFollowing(true);
         } else {
@@ -63,18 +63,14 @@ const ProfilePage = () => {
     fetchData();
   }, [userId]);
 
-  // <--- NEW: FOLLOW HANDLER
   const handleFollow = async () => {
     try {
         const response = await axios.patch(`http://localhost:5000/users/${loggedInUser._id}/${userId}`, {}, {
             headers: { Authorization: `Bearer ${token}` }
         });
         
-        // 1. Toggle UI state
         setIsFollowing(!isFollowing);
 
-        // 2. Update Local Storage so other pages (like Dashboard) know about the change immediately
-        // The API returns the list of friend objects, we just need IDs for the local storage 'friends' array
         const updatedFriendIds = response.data.map(f => f._id); 
         const updatedUser = { ...loggedInUser, friends: updatedFriendIds };
         localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -102,9 +98,7 @@ const ProfilePage = () => {
           });
           
           setUserProfile(res.data);
-          // If editing own profile, update local storage
           if(loggedInUser._id === userId) {
-              // Keep friends list intact when updating profile info
               const currentUserData = JSON.parse(localStorage.getItem("user"));
               localStorage.setItem("user", JSON.stringify({ ...res.data, friends: currentUserData.friends, password: loggedInUser.password }));
           }
@@ -172,7 +166,7 @@ const ProfilePage = () => {
                   </div>
               </div>
 
-              {/* ACTIONS (Edit OR Follow) */}
+              {/* ACTIONS */}
               <div className="flex gap-3">
                   {isOwnProfile ? (
                       <button 
@@ -230,44 +224,68 @@ const ProfilePage = () => {
               >
                   ATTENDING
               </button>
+              
+              {/* ✅ ANALYTICS TAB (Only for Profile Owner) */}
+              {isOwnProfile && (
+                <button 
+                    onClick={() => setActiveTab("analytics")}
+                    className={`pb-3 px-2 font-bold text-sm ${activeTab === "analytics" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+                >
+                    ANALYTICS
+                </button>
+              )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-              {activeTab === "hosted" && hostedEvents.length === 0 && <p className="text-gray-500">No events hosted yet.</p>}
-              {activeTab === "attending" && attendingEvents.length === 0 && <p className="text-gray-500">Not attending any events.</p>}
-
-              {(activeTab === "hosted" ? hostedEvents : attendingEvents).map((event) => (
-                  <div key={event._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition border border-gray-100 dark:border-gray-700">
-                      <div className="h-32 bg-gray-200 dark:bg-gray-700 relative">
-                          {event.picturePath ? (
-                              <img 
-                                src={getImageUrl(event.picturePath)} 
-                                className="w-full h-full object-cover" 
-                                alt="event" 
-                              />
-                          ) : (
-                              <div className="w-full h-full flex items-center justify-center text-4xl">📅</div>
-                          )}
-                          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-bold text-blue-600">
-                              {new Date(event.date).toLocaleDateString()}
-                          </div>
-                      </div>
-                      <div className="p-4">
-                          <h4 className="font-bold text-lg mb-1 truncate dark:text-white">{event.title}</h4>
-                          <p className="text-gray-500 text-sm mb-3 truncate dark:text-gray-400">{event.location}</p>
-                          <div className="flex justify-between items-center">
-                             <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">{event.category}</span>
-                             {activeTab === "attending" && (
-                                 <button onClick={() => navigate(`/ticket/${event._id}`)} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold hover:bg-purple-200">
-                                     View Ticket
-                                 </button>
-                             )}
-                          </div>
-                      </div>
+              
+              {/* ✅ VIEW 1: HOST ANALYTICS */}
+              {activeTab === "analytics" && (
+                  <div className="md:col-span-2 lg:col-span-3">
+                      <HostAnalytics userId={userId} />
                   </div>
-              ))}
-          </div>
+              )}
 
+              {/* ✅ VIEW 2: LISTS (Hosted or Attending) */}
+              {activeTab !== "analytics" && (
+                <>
+                    {/* Empty State Messages */}
+                    {activeTab === "hosted" && hostedEvents.length === 0 && <p className="text-gray-500 col-span-full text-center py-4">No events hosted yet.</p>}
+                    {activeTab === "attending" && attendingEvents.length === 0 && <p className="text-gray-500 col-span-full text-center py-4">Not attending any events.</p>}
+
+                    {/* Events Loop */}
+                    {(activeTab === "hosted" ? hostedEvents : attendingEvents).map((event) => (
+                        <div key={event._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition border border-gray-100 dark:border-gray-700">
+                            <div className="h-32 bg-gray-200 dark:bg-gray-700 relative">
+                                {event.picturePath ? (
+                                    <img 
+                                        src={getImageUrl(event.picturePath)} 
+                                        className="w-full h-full object-cover" 
+                                        alt="event" 
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-4xl">📅</div>
+                                )}
+                                <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-bold text-blue-600">
+                                    {new Date(event.date).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div className="p-4">
+                                <h4 className="font-bold text-lg mb-1 truncate dark:text-white">{event.title}</h4>
+                                <p className="text-gray-500 text-sm mb-3 truncate dark:text-gray-400">{event.location}</p>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">{event.category}</span>
+                                    {activeTab === "attending" && (
+                                        <button onClick={() => navigate(`/ticket/${event._id}`)} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold hover:bg-purple-200">
+                                            View Ticket
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </>
+              )}
+          </div>
       </div>
     </div>
   );

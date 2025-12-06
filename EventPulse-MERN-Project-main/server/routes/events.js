@@ -1,4 +1,6 @@
 import express from "express";
+import { getHostAnalytics } from "../controllers/events.js";
+
 import { 
     createEvent, 
     getFeedEvents, 
@@ -46,5 +48,7 @@ router.patch("/:id/like", verifyToken, likeEvent);
 
 /* DELETE ROUTES */
 router.delete("/:id", verifyToken, deleteEvent);
+// Add this route with your other READ routes
+router.get("/analytics/:userId", verifyToken, getHostAnalytics);
 
 export default router;

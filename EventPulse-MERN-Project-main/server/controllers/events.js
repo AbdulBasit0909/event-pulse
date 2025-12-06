@@ -280,4 +280,43 @@ export const getFollowingEvents = async (req, res) => {
     } catch (err) {
         res.status(404).json({ message: err.message });
     }
+  };
+    /* GET HOST ANALYTICS */
+export const getHostAnalytics = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // 1. Find all events by this host
+    const events = await Event.find({ userId });
+
+    // 2. Calculate Totals
+    let totalEvents = events.length;
+    let totalTicketsSold = 0;
+    let totalRevenue = 0;
+
+    // 3. Prepare Data for Charts (e.g., Revenue per Event)
+    const chartData = events.map(event => {
+      const tickets = event.participants.length;
+      const revenue = tickets * event.price;
+      
+      totalTicketsSold += tickets;
+      totalRevenue += revenue;
+
+      return {
+        name: event.title.substring(0, 15) + "...", // Shorten name for chart
+        revenue: revenue,
+        tickets: tickets
+      };
+    });
+
+    res.status(200).json({
+      totalEvents,
+      totalTicketsSold,
+      totalRevenue,
+      chartData
+    });
+
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
 };
