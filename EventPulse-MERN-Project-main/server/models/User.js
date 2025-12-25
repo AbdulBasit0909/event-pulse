@@ -24,6 +24,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       min: 5,
+       // Will be hashed using bcrypt
     },
     picturePath: {
       type: String,
