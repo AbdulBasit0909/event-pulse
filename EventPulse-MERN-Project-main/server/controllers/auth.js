@@ -137,11 +137,21 @@ export const googleLogin = async (req, res) => {
 
     res.status(200).json({ token, user: userResponse });
 
-  } catch (err) {
-    console.error("Google Auth Error:", err);
-    res.status(500).json({ error: err.message });
-  }
-};
+  } /* GOOGLE LOGIN */
+    catch (err) {
+        // Detailed Error Logging for OAuth failures
+        console.error("Google OAuth Error Details:", {
+            message: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Return a generic message to client for security (don't leak stack traces)
+        res.status(500).json({ 
+            error: "Google Authentication Failed. Please try standard login." 
+        });
+      }
+    };
 
 /* --- NEW: FORGOT PASSWORD (SEND EMAIL) --- */
 export const forgotPassword = async (req, res) => {

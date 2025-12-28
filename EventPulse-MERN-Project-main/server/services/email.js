@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-
+// ADD THIS IMPORT
+    import { welcomeTemplate, ticketTemplate } from "../utils/emailTemplates.js";
 dotenv.config();
 
 // Create Transporter (The Postman)
