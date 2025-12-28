@@ -65,6 +65,20 @@ const Login = () => {
             <p className="text-xl font-light opacity-90">
                 Discover events, connect with communities, and create memories that last a lifetime.
             </p>
+            <button
+        type="submit"
+        disabled={loading}
+        // Added dynamic styling based on loading state
+        className={`w-full py-3 rounded-lg font-bold transition duration-300 shadow-lg ${
+            loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white transform hover:-translate-y-1"
+        }`}
+    >
+        {loading ? (
+            <span className="flex items-center justify-center gap-2">
+                ⏳ Authenticating...
+            </span>
+        ) : "Sign In"}
+    </button>
         </div>
       </div>
 
